@@ -7,8 +7,8 @@
 - [ ] Debt simplification
 - [ ] Record settlements
 
-- Frontend: React, TypeScript, Vite, Tailwind CSS, TanStack Query
-- Backend: Flask, SQLAlchemy, Flask-Migrate
+- Frontend: React, TypeScript, Vite, Tailwind CSS
+- Backend: Flask, SQLAlchemy
 - Database: PostgreSQL (Docker)
 - Auth: JWT
 
