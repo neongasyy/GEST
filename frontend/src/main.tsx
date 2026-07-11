@@ -6,7 +6,8 @@ import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
-import DashboardPage from './pages/DashboardPage'
+import GroupsListPage from './pages/GroupsListPage'
+import GroupDetailPage from './pages/GroupDetailPage'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -16,7 +17,11 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<DashboardPage />} />
+            <Route path="/" element={<GroupsListPage />} />
+          </Route>
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<GroupsListPage />} />
+            <Route path="/groups/:groupId" element={<GroupDetailPage />} />
           </Route>
         </Routes>
       </AuthProvider>
