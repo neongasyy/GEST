@@ -1,0 +1,29 @@
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict
+
+from app.schemas.user import UserRead
+
+class GroupCreate(BaseModel):
+    name: str
+    
+class GroupRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    name: str
+    created_by: int
+    created_at: datetime
+    
+class GroupMemberRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    user: UserRead
+    joined_at: datetime
+    
+class GroupDetail(GroupRead):
+    members: list[GroupMemberRead]
+    
+class AddMemberRequest(BaseModel):
+    email:str
