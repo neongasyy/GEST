@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.config import settings
 from app.api.routes.auth import router as auth_router
 from app.api.routes.groups import router as groups_router
 from app.api.routes.expenses import router as expenses_router
@@ -16,7 +17,7 @@ app.include_router(settlements_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=settings.allowed_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
