@@ -12,9 +12,9 @@ class Group(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     creator = relationship("User", back_populates="groups_created")
-    members = relationship("GroupMember", back_populates="group")
-    expenses = relationship("Expense", back_populates="group")
-    settlements = relationship("Settlement", back_populates="group")
+    members = relationship("GroupMember", back_populates="group", cascade="all, delete-orphan")
+    expenses = relationship("Expense", back_populates="group", cascade="all, delete-orphan")
+    settlements = relationship("Settlement", back_populates="group", cascade="all, delete-orphan")
 
 class GroupMember(Base):
     __tablename__ = "group_members"

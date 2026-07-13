@@ -38,6 +38,12 @@ export async function addMember(groupId: number, email: string): Promise<GroupDe
     return response.data
 }
 
-export async function removeMember(groupId: number, userId: number): Promise<void> {
-    await client.delete(`/groups/${groupId}/members/${userId}`)
+export async function removeMember(groupId: number, userId: number, newOwnerId?: number): Promise<void> {
+    await client.delete(`/groups/${groupId}/members/${userId}`, {
+        params: newOwnerId ? { new_owner_id: newOwnerId } : undefined,
+    })
+}
+
+export async function deleteGroup(groupId: number): Promise<void> {
+    await client.delete(`/groups/${groupId}`)
 }

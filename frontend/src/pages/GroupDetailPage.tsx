@@ -1,12 +1,14 @@
 import { useEffect, useState, type SyntheticEvent } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { getGroup, addMember, removeMember, type GroupDetail as GroupDetailType } from '../api/groups'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { getGroup, addMember, removeMember, deleteGroup, type GroupDetail as GroupDetailType } from '../api/groups'
+import axios from 'axios'
 import { listExpenses, type Expense } from '../api/expenses'
 import { getGroupBalances, createSettlement, listSettlements, type GroupBalances, type Settlement } from '../api/balances'
 import { useAuth } from '../context/AuthContext'
 
 export default function GroupDetailPage() {
   const { groupId } = useParams<{ groupId: string }>()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [group, setGroup] = useState<GroupDetailType | null>(null)
   const [expenses, setExpenses] = useState<Expense[]>([])
@@ -15,6 +17,8 @@ export default function GroupDetailPage() {
   const [newMemberEmail, setNewMemberEmail] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [showTransferPicker, setShowTransferPicker] = useState(false)
+  const [newOwnerId, setNewOwnerId] = useState<number | ''>('')
 
   useEffect(() => {
     loadGroup()
@@ -89,6 +93,36 @@ export default function GroupDetailPage() {
     }
   }
 
+  async function handleLeave() {
+    if (!groupId || !user || !group) return
+    const otherMembers = group.members.filter((m) => m.user.id !== user.id)
+    if (user.id === group.created_by && otherMembers.length > 0) {
+      setShowTransferPicker(true)
+      return
+    }
+    try {
+      await removeMember(Number(groupId), user.id)
+      navigate('/')
+    } catch {
+      setError('Could not leave group')
+    }
+  }
+
+  async function handleConfirmTransferAndLeave() {
+    if (!groupId || !user || newOwnerId === '') return
+    setError('')
+    try {
+      await removeMember(Number(groupId), user.id, Number(newOwnerId))
+      navigate('/')
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data?.detail) {
+        setError(err.response.data.detail)
+      } else {
+        setError('Could not leave group')
+      }
+    }
+  }
+
   async function handleSettle(fromUserId: number, toUserId: number, amount: string) {
     if (!groupId) return
     try {
@@ -97,6 +131,22 @@ export default function GroupDetailPage() {
       await loadSettlements()
     } catch {
       setError('Could not record settlement')
+    }
+  }
+
+  async function handleDeleteGroup() {
+    if (!groupId || !group) return
+    if (!window.confirm(`Delete "${group.name}"? This cannot be undone.`)) return
+    setError('')
+    try {
+      await deleteGroup(Number(groupId))
+      navigate('/')
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.data?.detail) {
+        setError(err.response.data.detail)
+      } else {
+        setError('Could not delete group')
+      }
     }
   }
 
@@ -110,8 +160,15 @@ export default function GroupDetailPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
-      <Link to="/" className="text-sm text-blue-600 mb-4 inline-block">&larr; Back to groups</Link>
-      <h1 className="text-2xl font-semibold text-slate-800 mb-6">{group.name}</h1>
+      <Link to="/" className="text-sm text-blue-600 mb-4 inline-block">&larr; Back</Link>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold text-slate-800">{group.name}</h1>
+        {user?.id === group.created_by && (
+          <button onClick={handleDeleteGroup} className="text-sm text-red-600">
+            Delete Group
+          </button>
+        )}
+      </div>
 
       {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
 
@@ -131,19 +188,53 @@ export default function GroupDetailPage() {
         </form>
         <ul className="space-y-2">
           {group.members.map((member) => {
-            const canRemove = member.user.id === user?.id || user?.id === group.created_by
+            const isSelf = member.user.id === user?.id
+            const canRemove = isSelf || user?.id === group.created_by
             return (
               <li key={member.id} className="flex justify-between items-center bg-white rounded-lg shadow-sm p-4">
                 <span>{member.user.name} ({member.user.email})</span>
                 {canRemove && (
-                  <button onClick={() => handleRemoveMember(member.user.id)} className="text-sm text-red-600">
-                    {member.user.id === user?.id ? 'Leave' : 'Remove'}
+                  <button
+                    onClick={() => (isSelf ? handleLeave() : handleRemoveMember(member.user.id))}
+                    className="text-sm text-red-600"
+                  >
+                    {isSelf ? 'Leave' : 'Remove'}
                   </button>
                 )}
               </li>
             )
           })}
         </ul>
+
+        {showTransferPicker && (
+          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p className="text-sm text-slate-700 mb-2">
+              You're the owner — choose who takes over before you leave:
+            </p>
+            <div className="flex gap-2">
+              <select
+                value={newOwnerId}
+                onChange={(e) => setNewOwnerId(Number(e.target.value))}
+                className="border rounded px-3 py-2 flex-1"
+              >
+                <option value="">Select new owner...</option>
+                {group.members
+                  .filter((m) => m.user.id !== user?.id)
+                  .map((m) => (
+                    <option key={m.user.id} value={m.user.id}>
+                      {m.user.name}
+                    </option>
+                  ))}
+              </select>
+              <button onClick={handleConfirmTransferAndLeave} className="bg-slate-800 text-white rounded px-4 py-2">
+                Transfer & leave
+              </button>
+              <button onClick={() => setShowTransferPicker(false)} className="text-slate-500 px-4 py-2">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="mb-8">
