@@ -8,6 +8,8 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import GroupsListPage from './pages/GroupsListPage'
 import GroupDetailPage from './pages/GroupDetailPage'
+import AddExpensePage from './pages/AddExpensePage'
+import RecordSettlementPage from './pages/RecordSettlementPage'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -18,10 +20,9 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/register" element={<RegisterPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/" element={<GroupsListPage />} />
-          </Route>
-          <Route element={<ProtectedRoute />}>
-            <Route path="/" element={<GroupsListPage />} />
             <Route path="/groups/:groupId" element={<GroupDetailPage />} />
+            <Route path="/groups/:groupId/expenses/new" element={<AddExpensePage />} />
+            <Route path="/groups/:groupId/settlements/new" element={<RecordSettlementPage />} />
           </Route>
         </Routes>
       </AuthProvider>
