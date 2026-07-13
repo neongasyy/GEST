@@ -4,6 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.expense import Expense, ExpenseSplit
+from app.models.settlement import Settlement
 
 
 def calculate_net_balances(db: Session, group_id: int, member_ids: list[int]) -> dict[int, Decimal]:
@@ -20,13 +21,32 @@ def calculate_net_balances(db: Session, group_id: int, member_ids: list[int]) ->
         .group_by(ExpenseSplit.user_id)
         .all()
     )
+    settlements_paid_rows = (
+        db.query(Settlement.paid_by, func.sum(Settlement.amount))
+        .filter(Settlement.group_id == group_id)
+        .group_by(Settlement.paid_by)
+        .all()
+    )
+    settlements_received_rows = (
+        db.query(Settlement.paid_to, func.sum(Settlement.amount))
+        .filter(Settlement.group_id == group_id)
+        .group_by(Settlement.paid_to)
+        .all()
+    )
 
     paid = {user_id: total for user_id, total in paid_rows}
     owed = {user_id: total for user_id, total in owed_rows}
+    settled_paid = {user_id: total for user_id, total in settlements_paid_rows}
+    settled_received = {user_id: total for user_id, total in settlements_received_rows}
 
     net_balances = {}
     for user_id in member_ids:
-        net_balances[user_id] = paid.get(user_id, Decimal("0")) - owed.get(user_id, Decimal("0"))
+        net_balances[user_id] = (
+            paid.get(user_id, Decimal("0"))
+            - owed.get(user_id, Decimal("0"))
+            + settled_paid.get(user_id, Decimal("0"))
+            - settled_received.get(user_id, Decimal("0"))
+        )
 
     return net_balances
 
