@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.exc import IntegrityError
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
@@ -54,7 +55,11 @@ def add_member(group_id: int, payload: AddMemberRequest, db: Session = Depends(g
 
     membership = GroupMember(group_id=group.id, user_id=target_user.id)
     db.add(membership)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User is already a member of the group")
 
     return get_group_with_members(db, group_id)
 
@@ -79,10 +84,17 @@ def remove_member(
     if not membership:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User is not a member of the group")
 
+    net_balances = calculate_net_balances(db, group_id, [user_id])
+    if net_balances[user_id] != 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot remove this member. They are not settled up",
+        )
+
     is_owner_leaving = user_id == current_user.id and current_user.id == group.created_by # type: ignore[operator]
     other_members = [member for member in group.members if member.user_id != user_id]
 
-    if is_owner_leaving and other_members:
+    if is_owner_leaving and other_members: # type: ignore[arg-type]
         if new_owner_id is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -91,7 +103,7 @@ def remove_member(
         if not any(member.user_id == new_owner_id for member in other_members):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="new_owner_id must be another current member of the group",
+                detail="The new owner be another current member of the group",
             )
         group.created_by = new_owner_id # type: ignore[assignment]
 
@@ -105,7 +117,7 @@ def delete_group(
     current_user: User = Depends(get_current_user),
 ):
     group = get_group_with_members(db, group_id)
-    require_membership(group, current_user.id)  # type: ignore[arg-type]
+    require_membership(group, current_user.id) # type: ignore[arg-type]
 
     if current_user.id != group.created_by:  # type: ignore[comparison-overlap]
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the group creator can delete this group")

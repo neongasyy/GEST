@@ -10,6 +10,13 @@ class SplitInput(BaseModel):
     user_id: int
     value: Decimal | None = None
     
+    @field_validator("value")
+    @classmethod
+    def non_negative_value(cls, value: Decimal | None) -> Decimal | None:
+        if value is not None and value < 0:
+            raise ValueError("Split value cannot be negative")
+        return value
+    
 class ExpenseCreate(BaseModel):
     description: str
     amount: Decimal
