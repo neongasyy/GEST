@@ -25,3 +25,11 @@ export async function getCurrentUser(): Promise<User> {
     const response = await client.get<User>('/auth/me')
     return response.data
 }
+
+export async function forgotPassword(email: string): Promise<void> {
+    await client.post('/auth/forgot-password', { email })
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<void> {
+    await client.post('/auth/reset-password', { token, new_password: newPassword })
+}

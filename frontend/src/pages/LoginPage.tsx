@@ -47,6 +47,9 @@ export default function LoginPage() {
                 <p className="text-sm text-slate-500">
                     <Link to="/register" className="text-blue-600">Create new account</Link>
                 </p>
+                <p className="text-sm text-slate-500">
+                    <Link to="/forgot-password" className="text-blue-600">Forgot password?</Link>
+                </p>
             </form>
         </div>
     )

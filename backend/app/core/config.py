@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     secret_key: str
     access_token_expire_minutes: int = 60
     allowed_origins: str = "http://localhost:5173"
+    frontend_url: str = "http://localhost:5173"
 
     class Config:
         env_file = ".env"
