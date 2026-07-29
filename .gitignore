@@ -8,6 +8,9 @@ backend/.env
 frontend/node_modules/
 frontend/dist/
 
+# Unrelated side project - has its own separate git repo
+frontend-css-practice/
+
 # Editors / OS
 .vscode/
 .DS_Store
