@@ -1,5 +1,6 @@
 import { useState, type SyntheticEvent  } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { isAxiosError } from 'axios'
 import { register } from '../api/auth'
 import { useAuth } from '../context/AuthContext'
 
@@ -18,8 +19,12 @@ export default function RegisterPage() {
             await register(email, password, name)
             await login(email,password)
             navigate('/')
-        } catch {
-            setError('Registration failed. Email may already be in use.')
+        } catch (err) {
+            if (isAxiosError(err) && typeof err.response?.data?.detail === 'string') {
+                setError(err.response.data.detail)
+            } else {
+                setError('Registration failed. Please try again.')
+            }
         }
     }
 
