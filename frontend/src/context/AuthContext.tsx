@@ -16,7 +16,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const token = localStorage.getItem('access_token');
+        const token = sessionStorage.getItem('access_token');
         if (!token) {
             setIsLoading(false);
             return;
@@ -24,20 +24,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         getCurrentUser()
             .then(setUser)
             .catch(() => {
-                localStorage.removeItem('access_token')
+                sessionStorage.removeItem('access_token')
             })
             .finally(() => setIsLoading(false));
     }, []);
 
     async function login(email: string, password: string) {
         const token = await apiLogin(email, password)
-        localStorage.setItem('access_token', token);
+        sessionStorage.setItem('access_token', token);
         const currentUser = await getCurrentUser();
         setUser(currentUser);
     }
 
     function logout() {
-        localStorage.removeItem('access_token');
+        sessionStorage.removeItem('access_token');
         setUser(null);
     }
 
