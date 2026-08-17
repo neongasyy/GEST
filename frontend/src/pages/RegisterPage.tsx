@@ -20,8 +20,17 @@ export default function RegisterPage() {
             await login(email,password)
             navigate('/')
         } catch (err) {
-            if (isAxiosError(err) && typeof err.response?.data?.detail === 'string') {
-                setError(err.response.data.detail)
+            if (isAxiosError(err)) {
+                const detail = err.response?.data?.detail
+                if (typeof detail === 'string') {
+                    setError(detail)
+                } else if (Array.isArray(detail) && typeof detail[0]?.msg === 'string') {
+                    setError(detail[0].msg)
+                } else if (!err.response) {
+                    setError('Could not reach the server. Please check your connection and try again.')
+                } else {
+                    setError('Registration failed. Please try again.')
+                }
             } else {
                 setError('Registration failed. Please try again.')
             }
